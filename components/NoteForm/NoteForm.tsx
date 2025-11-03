@@ -1,111 +1,106 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+"use client";
+import { useMutation } from "@tanstack/react-query";
 import css from "./NoteForm.module.css";
-import { ErrorMessage, Field, Form, Formik, type FormikHelpers } from "formik";
-import { useId } from "react";
-import * as Yup from "yup";
+import { ChangeEvent, useId } from "react";
 import { createNote } from "@/lib/api";
 
-interface NoteFormProps {
-  onClose: () => void;
-}
+import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
+import { useNoteStore } from "@/lib/store/noteStore";
 
-const NoteSchema = Yup.object().shape({
-  title: Yup.string()
-    .min(3, "Please enter min 3 symbols")
-    .max(50, "Maximum 50 symbols")
-    .required("Title is required"),
-  content: Yup.string().max(500, "Maximum 500 symbols"),
-  tag: Yup.string()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"], "Invalid tag")
-    .required("Tag is required"),
-});
+export default function NoteForm() {
+  const router = useRouter();
+  const { draft, setDraft, clearDraft } = useNoteStore();
 
-interface FormValues {
-  title: string;
-  content: string;
-  tag: "Todo" | "Work" | "Personal" | "Meeting" | "Shopping";
-}
-
-const initialValues: FormValues = {
-  title: "",
-  content: "",
-  tag: "Todo",
-};
-
-export default function NoteForm({ onClose }: NoteFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      onClose();
+      clearDraft();
+      router.push("/notes/filter/all");
     },
   });
 
-  const handleSubmit = (
-    values: FormValues,
-    actions: FormikHelpers<FormValues>
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    mutation.mutate(values);
-    actions.resetForm();
+    setDraft({ ...draft, [e.target.name]: e.target.value });
+  };
+
+  const handleBack = () => {
+    router.back();
+  };
+
+  const handleSubmit = async (formData: FormData) => {
+    const noteData = {
+      title: formData.get("title") as string,
+      content: formData.get("content") as string,
+      tag: formData.get("tag") as
+        | "Todo"
+        | "Work"
+        | "Personal"
+        | "Meeting"
+        | "Shopping",
+    };
+    if (!noteData.title || !noteData.content || !noteData.tag) {
+      toast.error("All fields are required");
+      return;
+    }
+    mutate(noteData);
   };
 
   const id = useId();
   return (
-    <Formik
-      initialValues={initialValues}
-      onSubmit={handleSubmit}
-      validationSchema={NoteSchema}
-    >
-      <Form className={css.form}>
-        <div className={css.formGroup}>
-          <label htmlFor={`${id}-title`}>Title</label>
-          <Field
-            id={`${id}-title`}
-            type="text"
-            name="title"
-            className={css.input}
-          />
-          <ErrorMessage name="title" component="span" className={css.error} />
-        </div>
+    <form className={css.form} action={handleSubmit}>
+      <Toaster position="top-center" reverseOrder={false} />
+      <div className={css.formGroup}>
+        <label htmlFor={`${id}-title`}>Title</label>
+        <input
+          defaultValue={draft.title}
+          id={`${id}-title`}
+          type="text"
+          name="title"
+          className={css.input}
+          onChange={handleChange}
+        />
+      </div>
 
-        <div className={css.formGroup}>
-          <label htmlFor={`${id}-content`}>Content</label>
-          <Field
-            as="textarea"
-            id={`${id}-content`}
-            name="content"
-            rows={8}
-            className={css.textarea}
-          />
-          <ErrorMessage name="content" component="span" className={css.error} />
-        </div>
+      <div className={css.formGroup}>
+        <label htmlFor={`${id}-content`}>Content</label>
+        <textarea
+          defaultValue={draft.content}
+          id={`${id}-content`}
+          name="content"
+          rows={8}
+          className={css.textarea}
+          onChange={handleChange}
+        />
+      </div>
 
-        <div className={css.formGroup}>
-          <label htmlFor={`${id}-tag`}>Tag</label>
-          <Field as="select" id={`${id}-tag`} name="tag" className={css.select}>
-            <option value="Todo">Todo</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
-            <option value="Meeting">Meeting</option>
-            <option value="Shopping">Shopping</option>
-          </Field>
-          <ErrorMessage name="tag" component="span" className={css.error} />
-        </div>
+      <div className={css.formGroup}>
+        <label htmlFor={`${id}-tag`}>Tag</label>
+        <select
+          defaultValue={draft.tag}
+          id={`${id}-tag`}
+          name="tag"
+          className={css.select}
+          onChange={handleChange}
+        >
+          <option value="Todo">Todo</option>
+          <option value="Work">Work</option>
+          <option value="Personal">Personal</option>
+          <option value="Meeting">Meeting</option>
+          <option value="Shopping">Shopping</option>
+        </select>
+      </div>
 
-        <div className={css.actions}>
-          <button type="button" className={css.cancelButton} onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={css.submitButton}
-            disabled={mutation.isPending}
-          >
-            Create note
-          </button>
-        </div>
-      </Form>
-    </Formik>
+      <div className={css.actions}>
+        <button type="button" className={css.cancelButton} onClick={handleBack}>
+          Cancel
+        </button>
+        <button type="submit" className={css.submitButton} disabled={isPending}>
+          {isPending ? "Create..." : "Create note"}
+        </button>
+      </div>
+    </form>
   );
 }

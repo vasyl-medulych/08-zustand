@@ -10,8 +10,7 @@ import ErrorMessage from "@/components/ErrorMessage/ErrorMessage";
 import Loader from "@/components/Loader/Loader";
 import toast, { Toaster } from "react-hot-toast";
 import { useDebounce } from "use-debounce";
-import Modal from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
+import Link from "next/link";
 
 interface NotesClientProp {
   tag?: string;
@@ -21,11 +20,6 @@ function NotesClient({ tag }: NotesClientProp) {
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [debouncedQuery] = useDebounce(query, 500);
-  const [isModal, setIsModal] = useState(false);
-
-  const toggleModal = () => {
-    setIsModal(!isModal);
-  };
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notes", debouncedQuery, currentPage, tag],
@@ -59,14 +53,9 @@ function NotesClient({ tag }: NotesClientProp) {
             />
           )}
 
-          <button
-            className={css.button}
-            onClick={() => {
-              toggleModal();
-            }}
-          >
+          <Link href="/notes/action/create" className={css.button}>
             Create Note +
-          </button>
+          </Link>
         </header>
       </div>
       {isLoading && <Loader />}
@@ -78,15 +67,6 @@ function NotesClient({ tag }: NotesClientProp) {
         data &&
         data?.notes.length > 0 &&
         isLoading === false && <NoteList notes={data?.notes} />
-      )}
-      {isModal && (
-        <Modal onClose={toggleModal}>
-          <NoteForm
-            onClose={() => {
-              toggleModal();
-            }}
-          />
-        </Modal>
       )}
     </>
   );
