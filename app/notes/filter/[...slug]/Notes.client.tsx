@@ -44,23 +44,21 @@ function NotesClient({ tag }: NotesClientProp) {
     <>
       <div className={css.app}>
         <header className={css.toolbar}>
+          <Toaster position="top-center" reverseOrder={false} />
           <SearchBox onSearch={handleSearch} />
-          {totalPages > 1 && (
+          {totalPages >= 1 && (
             <Pagination
               totalPages={totalPages}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
             />
           )}
-
           <Link href="/notes/action/create" className={css.button}>
             Create Note +
           </Link>
         </header>
       </div>
       {isLoading && <Loader />}
-      <Toaster position="top-center" reverseOrder={false} />
-
       {isError ? (
         <ErrorMessage />
       ) : (

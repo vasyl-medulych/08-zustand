@@ -15,15 +15,15 @@ export async function generateMetadata({
   params,
 }: NotesProps): Promise<Metadata> {
   const { slug } = await params;
-  const title = `Notes: ${slug}`;
-  const description = `Notes with tag: ${slug}`;
+  const title = `Notes: ${slug[0]}`;
+  const description = `Notes with tag: ${slug[0]}`;
   return {
     title,
     description,
     openGraph: {
       title,
       description,
-      url: `${process.env.NEXT_PUBLIC_SITE_URL}/notes/filter/${slug}`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL}/notes/filter/${slug[0]}`,
       siteName: title,
       images: [
         {
